@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 /// Variant wrapper containing the real action.
-#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct InstanceActionInfo {
-    /// Enumeration indicating what type of action is contained in the payload.
     pub action_type: ActionType,
 }
 
@@ -12,6 +11,11 @@ impl InstanceActionInfo {
     pub fn new(action_type: ActionType) -> Self {
         Self { action_type }
     }
+
+    ///// Enumeration indicating what type of action is contained in the payload.
+    //pub fn action_type(&self) -> ActionType {
+    //    self.action_type
+    //}
 }
 
 /// Enumeration indicating what type of action is contained in the payload.

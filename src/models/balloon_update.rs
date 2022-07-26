@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Balloon device descriptor.
-#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct BalloonUpdate {
     /// Target balloon size in MiB.
     pub amount_mib: i32,

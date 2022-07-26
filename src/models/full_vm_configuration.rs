@@ -7,25 +7,19 @@ use crate::models::{
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct FullVmConfiguration {
-    pub balloon: Option<Box<Balloon>>,
+    pub balloon: Option<Balloon>,
     /// Configurations for all block devices.
     pub drives: Option<Vec<Drive>>,
     #[serde(rename = "boot-source")]
-    pub boot_source: Option<Box<BootSource>>,
-    pub logger: Option<Box<Logger>>,
+    pub boot_source: Option<BootSource>,
+    pub logger: Option<Logger>,
     #[serde(rename = "machine-config")]
-    pub machine_config: Option<Box<MachineConfiguration>>,
-    pub metrics: Option<Box<Metrics>>,
+    pub machine_config: Option<MachineConfiguration>,
+    pub metrics: Option<Metrics>,
     #[serde(rename = "mmds-config")]
-    pub mmds_config: Option<Box<MmdsConfig>>,
+    pub mmds_config: Option<MmdsConfig>,
     /// Configurations for all net devices.
     #[serde(rename = "network-interfaces")]
     pub network_interfaces: Option<Vec<NetworkInterface>>,
-    pub vsock: Option<Box<Vsock>>,
-}
-
-impl FullVmConfiguration {
-    pub fn new() -> Self {
-        Default::default()
-    }
+    pub vsock: Option<Vsock>,
 }

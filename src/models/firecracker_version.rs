@@ -9,9 +9,9 @@ pub struct FirecrackerVersion {
 
 impl FirecrackerVersion {
     /// Describes the Firecracker version.
-    pub fn new(firecracker_version: String) -> Self {
+    pub fn new(firecracker_version: impl AsRef<str>) -> Self {
         Self {
-            firecracker_version,
+            firecracker_version: firecracker_version.as_ref().to_owned(),
         }
     }
 }

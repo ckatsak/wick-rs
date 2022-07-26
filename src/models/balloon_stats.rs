@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Describes the balloon device statistics.
-#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct BalloonStats {
     /// Target number of pages the device aims to hold.
     pub target_pages: i32,
@@ -23,9 +23,11 @@ pub struct BalloonStats {
     pub free_memory: Option<i64>,
     /// The total amount of memory available (in bytes).
     pub total_memory: Option<i64>,
-    /// An estimate of how much memory is available (in bytes) for starting new applications, without pushing the system to swap.
+    /// An estimate of how much memory is available (in bytes) for starting new applications,
+    /// without pushing the system to swap.
     pub available_memory: Option<i64>,
-    /// The amount of memory, in bytes, that can be quickly reclaimed without additional I/O. Typically these pages are used for caching files from disk.
+    /// The amount of memory, in bytes, that can be quickly reclaimed without additional I/O.
+    /// Typically these pages are used for caching files from disk.
     pub disk_caches: Option<i64>,
     /// The number of successful hugetlb page allocations in the guest.
     pub hugetlb_allocations: Option<i64>,

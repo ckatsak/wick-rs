@@ -5,9 +5,3 @@ pub struct Error {
     /// A description of the error condition.
     pub fault_message: Option<String>,
 }
-
-impl Error {
-    pub fn new() -> Self {
-        Default::default()
-    }
-}

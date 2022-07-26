@@ -1,3 +1,5 @@
+//use std::borrow::Cow;
+
 use serde::{Deserialize, Serialize};
 
 /// Describes MicroVM instance information.
@@ -24,6 +26,27 @@ impl InstanceInfo {
             vmm_version,
         }
     }
+
+    ///// Application name.
+    //pub fn app_name(&self) -> Cow<'_, str> {
+    //    Cow::Borrowed(&self.app_name)
+    //}
+
+    ///// MicroVM / instance ID.
+    //pub fn id(&self) -> Cow<'_, str> {
+    //    Cow::Borrowed(&self.id)
+    //}
+
+    ///// The current detailed state (Not started, Running, Paused) of the Firecracker instance. This
+    ///// value is read-only for the control-plane.
+    //pub fn state(&self) -> State {
+    //    self.state
+    //}
+
+    ///// MicroVM hypervisor build version.
+    //pub fn vmm_version(&self) -> Cow<'_, str> {
+    //    Cow::Borrowed(&self.vmm_version)
+    //}
 }
 
 /// The current detailed state (Not started, Running, Paused) of the Firecracker instance. This

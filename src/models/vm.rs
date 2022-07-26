@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Defines the microVM running state. It is especially useful in the snapshotting context.
-#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub struct Vm {
     pub state: State,
 }
