@@ -1,56 +1,25 @@
+use crate::models;
 use serde::{Deserialize, Serialize};
 
-use crate::models::TokenBucket;
-
 /// Defines an IO rate limiter with independent bytes/s and ops/s limits. Limits are defined by
-/// configuring each of the `bandwidth` and `ops` token buckets.
-#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
+/// configuring each of the _bandwidth_ and _ops_ token buckets. This field is optional for
+/// virtio-block config and should be omitted for vhost-user-block configuration.
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RateLimiter {
-    pub bandwidth: Option<TokenBucket>,
-    pub ops: Option<TokenBucket>,
+    #[serde(rename = "bandwidth", skip_serializing_if = "Option::is_none")]
+    pub bandwidth: Option<Box<models::TokenBucket>>,
+    #[serde(rename = "ops", skip_serializing_if = "Option::is_none")]
+    pub ops: Option<Box<models::TokenBucket>>,
 }
 
 impl RateLimiter {
-    /// Defines an IO rate limiter with independent bytes/s and ops/s limits. Limits are defined by
-    /// configuring each of the `bandwidth` and `ops` token buckets.
-    pub fn builder() -> RateLimiterBuilder {
-        RateLimiterBuilder {
+    /// Defines an IO rate limiter with independent bytes/s and ops/s limits. Limits are defined
+    /// by configuring each of the _bandwidth_ and _ops_ token buckets. This field is optional
+    /// for virtio-block config and should be omitted for vhost-user-block configuration.
+    pub fn new() -> Self {
+        Self {
             bandwidth: None,
             ops: None,
-        }
-    }
-
-    //pub fn bandwidth(&self) -> Option<&TokenBucket> {
-    //    self.bandwidth.as_ref()
-    //}
-
-    //pub fn ops(&self) -> Option<&TokenBucket> {
-    //    self.ops.as_ref()
-    //}
-}
-
-/// Defines an IO rate limiter with independent bytes/s and ops/s limits. Limits are defined by
-/// configuring each of the `bandwidth` and `ops` token buckets.
-pub struct RateLimiterBuilder {
-    bandwidth: Option<TokenBucket>,
-    ops: Option<TokenBucket>,
-}
-
-impl RateLimiterBuilder {
-    pub fn bandwidth(&mut self, bandwidth: TokenBucket) -> &mut Self {
-        self.bandwidth = Some(bandwidth);
-        self
-    }
-
-    pub fn ops(&mut self, ops: TokenBucket) -> &mut Self {
-        self.ops = Some(ops);
-        self
-    }
-
-    pub fn build(self) -> RateLimiter {
-        RateLimiter {
-            bandwidth: self.bandwidth,
-            ops: self.ops,
         }
     }
 }
