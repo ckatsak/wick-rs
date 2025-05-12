@@ -3,6 +3,7 @@ use std::{borrow::Borrow, sync::Arc};
 use compact_str::{CompactString, ToCompactString};
 use const_format::concatcp;
 use hyper::http;
+use tracing::{instrument, Level};
 
 use crate::{
     api::{config::Config, request::Request},
@@ -23,6 +24,7 @@ impl Client {
 }
 
 impl Api for Client {
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn create_snapshot(&self, body: models::SnapshotCreateParams) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/snapshot/create");
 
@@ -35,6 +37,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn create_sync_action(&self, info: models::InstanceActionInfo) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/actions");
 
@@ -47,6 +50,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn describe_balloon_config(&self) -> Result<models::Balloon, Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/balloon");
 
@@ -57,6 +61,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn describe_balloon_stats(&self) -> Result<models::BalloonStats, Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/balloon/statistics");
 
@@ -67,6 +72,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn describe_instance(&self) -> Result<models::InstanceInfo, Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/");
 
@@ -77,6 +83,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn get_export_vm_config(&self) -> Result<models::FullVmConfiguration, Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/vm/config");
 
@@ -87,6 +94,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn get_firecracker_version(&self) -> Result<models::FirecrackerVersion, Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/version");
 
@@ -97,6 +105,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn get_machine_configuration(&self) -> Result<models::MachineConfiguration, Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/machine-config");
 
@@ -107,6 +116,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn get_mmds(&self) -> Result<serde_json::Value, Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/mmds");
 
@@ -117,6 +127,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn load_snapshot(&self, body: models::SnapshotLoadParams) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/snapshot/load");
 
@@ -129,6 +140,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn patch_balloon(&self, body: models::BalloonUpdate) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/balloon");
 
@@ -141,6 +153,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn patch_balloon_stats_interval(
         &self,
         body: models::BalloonStatsUpdate,
@@ -156,6 +169,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn patch_guest_drive_by_id(
         &self,
         drive_id: &str,
@@ -174,6 +188,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn patch_guest_network_interface_by_id(
         &self,
         iface_id: &str,
@@ -192,6 +207,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn patch_machine_configuration(
         &self,
         body: Option<models::MachineConfiguration>,
@@ -207,6 +223,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn patch_mmds(&self, body: Option<serde_json::Value>) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/mmds");
 
@@ -219,6 +236,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn patch_vm(&self, body: models::Vm) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/vm");
 
@@ -231,6 +249,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_balloon(&self, body: models::Balloon) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/balloon");
 
@@ -243,6 +262,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_cpu_configuration(&self, body: Option<models::CpuConfig>) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/cpu-config");
 
@@ -255,6 +275,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_entropy_device(&self, body: models::EntropyDevice) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/entropy");
 
@@ -267,6 +288,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_guest_boot_source(&self, body: models::BootSource) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/boot-source");
 
@@ -279,6 +301,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_guest_drive_by_id(
         &self,
         drive_id: &str,
@@ -297,6 +320,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_guest_network_interface_by_id(
         &self,
         iface_id: &str,
@@ -315,6 +339,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_guest_vsock(&self, body: models::Vsock) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/vsock");
 
@@ -327,6 +352,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_logger(&self, body: models::Logger) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/logger");
 
@@ -339,6 +365,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_machine_configuration(
         &self,
         body: Option<models::MachineConfiguration>,
@@ -354,6 +381,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_metrics(&self, body: models::Metrics) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/metrics");
 
@@ -366,6 +394,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_mmds(&self, body: Option<serde_json::Value>) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/mmds");
 
@@ -378,6 +407,7 @@ impl Api for Client {
         req.execute(self.config.borrow()).await
     }
 
+    #[instrument(level = Level::DEBUG, skip(self))]
     async fn put_mmds_config(&self, body: models::MmdsConfig) -> Result<(), Error> {
         const PATH: &str = concatcp!(BASE_PATH, "/mmds/config");
 
