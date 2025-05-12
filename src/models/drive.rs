@@ -1,95 +1,52 @@
-use std::path::{Path, PathBuf};
-
+use crate::models;
 use serde::{Deserialize, Serialize};
 
-use crate::models::RateLimiter;
-
-#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Drive {
+    #[serde(rename = "drive_id")]
     pub drive_id: String,
-    /// Represents the caching strategy for the block device.
-    pub cache_type: Option<CacheType>,
-    pub is_read_only: bool,
-    pub is_root_device: bool,
     /// Represents the unique id of the boot partition of this device. It is optional and it will
-    /// be taken into account only if the `is_root_device` field is true.
+    /// be taken into account only if the is_root_device field is true.
+    #[serde(rename = "partuuid", skip_serializing_if = "Option::is_none")]
     pub partuuid: Option<String>,
-    /// Host level path for the guest drive.
-    pub path_on_host: PathBuf,
-    pub rate_limiter: Option<RateLimiter>,
-    /// Type of the IO engine used by the device. `Async` is supported on host kernels newer than
-    /// 5.10.51.
+    #[serde(rename = "is_root_device")]
+    pub is_root_device: bool,
+    /// Represents the caching strategy for the block device.
+    #[serde(rename = "cache_type", skip_serializing_if = "Option::is_none")]
+    pub cache_type: Option<CacheType>,
+    /// Is block read only. This field is required for virtio-block config and should be omitted
+    /// for vhost-user-block configuration.
+    #[serde(rename = "is_read_only", skip_serializing_if = "Option::is_none")]
+    pub is_read_only: Option<bool>,
+    /// Host level path for the guest drive. This field is required for virtio-block config and
+    /// should be omitted for vhost-user-block configuration.
+    #[serde(rename = "path_on_host", skip_serializing_if = "Option::is_none")]
+    pub path_on_host: Option<String>,
+    #[serde(rename = "rate_limiter", skip_serializing_if = "Option::is_none")]
+    pub rate_limiter: Option<Box<models::RateLimiter>>,
+    /// Type of the IO engine used by the device. \"Async\" is supported on host kernels newer
+    /// than 5.10.51. This field is optional for virtio-block config and should be omitted for
+    /// vhost-user-block configuration.
+    #[serde(rename = "io_engine", skip_serializing_if = "Option::is_none")]
     pub io_engine: Option<IoEngine>,
+    /// Path to the socket of vhost-user-block backend. This field is required for vhost-user-block
+    /// config should be omitted for virtio-block configuration.
+    #[serde(rename = "socket", skip_serializing_if = "Option::is_none")]
+    pub socket: Option<String>,
 }
 
 impl Drive {
-    pub fn builder(drive_id: String, path_on_host: impl AsRef<Path>) -> DriveBuilder {
-        DriveBuilder {
+    pub fn new(drive_id: String, is_root_device: bool) -> Self {
+        Self {
             drive_id,
-            cache_type: None,
-            is_read_only: false,
-            is_root_device: false,
             partuuid: None,
-            path_on_host: path_on_host.as_ref().to_path_buf(),
+            is_root_device,
+            cache_type: None,
+            is_read_only: None,
+            path_on_host: None,
             rate_limiter: None,
             io_engine: None,
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct DriveBuilder {
-    drive_id: String,
-    cache_type: Option<CacheType>,
-    is_read_only: bool,
-    is_root_device: bool,
-    partuuid: Option<String>,
-    path_on_host: PathBuf,
-    rate_limiter: Option<RateLimiter>,
-    io_engine: Option<IoEngine>,
-}
-
-impl DriveBuilder {
-    pub fn cache_type(&mut self, cache_type: CacheType) -> &mut Self {
-        self.cache_type = Some(cache_type);
-        self
-    }
-
-    pub fn is_read_only(&mut self, is_read_only: bool) -> &mut Self {
-        self.is_read_only = is_read_only;
-        self
-    }
-
-    pub fn is_root_device(&mut self, is_root_device: bool) -> &mut Self {
-        self.is_root_device = is_root_device;
-        self
-    }
-
-    pub fn partuuid(&mut self, partuuid: impl AsRef<str>) -> &mut Self {
-        self.partuuid = Some(partuuid.as_ref().to_owned());
-        self
-    }
-
-    pub fn rate_limiter(&mut self, rate_limiter: RateLimiter) -> &mut Self {
-        self.rate_limiter = Some(rate_limiter);
-        self
-    }
-
-    pub fn io_engine(&mut self, io_engine: IoEngine) -> &mut Self {
-        self.io_engine = Some(io_engine);
-        self
-    }
-
-    pub fn build(self) -> Drive {
-        Drive {
-            drive_id: self.drive_id,
-            cache_type: self.cache_type,
-            is_read_only: self.is_read_only,
-            is_root_device: self.is_root_device,
-            partuuid: self.partuuid,
-            path_on_host: self.path_on_host,
-            rate_limiter: self.rate_limiter,
-            io_engine: self.io_engine,
+            socket: None,
         }
     }
 }
@@ -99,21 +56,22 @@ impl DriveBuilder {
     Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize,
 )]
 pub enum CacheType {
-    #[default]
     #[serde(rename = "Unsafe")]
+    #[default]
     Unsafe,
     #[serde(rename = "Writeback")]
     Writeback,
 }
 
-/// Type of the IO engine used by the device. `Async` is supported on host kernels newer than
-/// 5.10.51.
+/// Type of the IO engine used by the device. "Async" is supported on host kernels newer than
+/// 5.10.51. This field is optional for virtio-block config and should be omitted for
+/// vhost-user-block configuration.
 #[derive(
     Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize,
 )]
 pub enum IoEngine {
-    #[default]
     #[serde(rename = "Sync")]
+    #[default]
     Sync,
     #[serde(rename = "Async")]
     Async,

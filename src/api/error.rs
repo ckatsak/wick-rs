@@ -1,247 +1,44 @@
-//! Typed errors for all API calls supported.
+use std::fmt::{self, Debug};
 
-use serde::{Deserialize, Serialize};
+use hyper::http;
 
-use crate::models::Error;
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("API error")]
+    Api(#[source] ApiError),
 
-#[allow(unused_imports)]
-use crate::MicrovmClient; // imported only for the docs
+    #[error("HTTP error")]
+    Http(#[source] http::Error),
 
-/// Error type returned by [`MicrovmClient::create_snapshot`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum CreateSnapshotError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
+    #[error("hyper error")]
+    Hyper(#[source] ::hyper::Error),
+
+    #[error("HTTP client error")]
+    HyperClient(#[source] ::hyper_util::client::legacy::Error),
+
+    #[error("(de)serialization error")]
+    Serde(#[source] ::serde_json::Error),
 }
 
-/// Error type returned by [`MicrovmClient::create_sync_action`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum CreateSyncActionError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
+#[derive(::thiserror::Error)]
+#[error("Server returned HTTP status: {code}")]
+pub struct ApiError {
+    pub code: ::hyper::StatusCode,
+    pub body: ::hyper::body::Incoming,
 }
 
-/// Error type returned by [`MicrovmClient::describe_balloon_config`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum DescribeBalloonConfigError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
+impl Debug for ApiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ApiError")
+            .field("code", &self.code)
+            .field("body", &"::hyper::body::Incoming")
+            .finish()
+    }
 }
 
-/// Error type returned by [`MicrovmClient::describe_balloon_stats`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum DescribeBalloonStatsError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::describe_instance`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum DescribeInstanceError {
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::get_export_vm_config`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum GetExportVmConfigError {
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::get_firecracker_version`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum GetFirecrackerVersionError {
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::get_machine_configuration`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum GetMachineConfigurationError {
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::get_mmds`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum GetMmdsError {
-    NotFound(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::load_snapshot`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum LoadSnapshotError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::patch_balloon`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PatchBalloonError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::patch_balloon_stats_interval`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PatchBalloonStatsIntervalError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::patch_guest_drive_by_id`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PatchGuestDriveByIdError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::patch_guest_network_interface_by_id`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PatchGuestNetworkInterfaceByIdError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::patch_machine_configuration`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PatchMachineConfigurationError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::patch_mmds`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PatchMmdsError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::patch_vm`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PatchVmError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::put_balloon`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PutBalloonError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::put_guest_boot_source`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PutGuestBootSourceError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::put_guest_drive_by_id`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PutGuestDriveByIdError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::put_guest_network_interface_by_id`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PutGuestNetworkInterfaceByIdError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::put_guest_vsock`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PutGuestVsockError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::put_logger`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PutLoggerError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::put_machine_configuration`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PutMachineConfigurationError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::put_metrics`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PutMetricsError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::put_mmds`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PutMmdsError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
-}
-
-/// Error type returned by [`MicrovmClient::put_mmds_config`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum PutMmdsConfigError {
-    BadRequest(Error),
-    InternalServerError(Error),
-    UnknownValue(serde_json::Value),
+impl From<(::hyper::StatusCode, ::hyper::body::Incoming)> for Error {
+    #[inline]
+    fn from((code, body): (::hyper::StatusCode, ::hyper::body::Incoming)) -> Self {
+        Error::Api(ApiError { code, body })
+    }
 }

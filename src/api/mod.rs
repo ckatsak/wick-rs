@@ -1,64 +1,137 @@
 pub mod client;
-mod error;
+pub mod config;
+pub mod error;
+mod request;
 
-pub use error::CreateSnapshotError;
-pub use error::CreateSyncActionError;
-pub use error::DescribeBalloonConfigError;
-pub use error::DescribeBalloonStatsError;
-pub use error::DescribeInstanceError;
-pub use error::GetExportVmConfigError;
-pub use error::GetFirecrackerVersionError;
-pub use error::GetMachineConfigurationError;
-pub use error::GetMmdsError;
-pub use error::LoadSnapshotError;
-pub use error::PatchBalloonError;
-pub use error::PatchBalloonStatsIntervalError;
-pub use error::PatchGuestDriveByIdError;
-pub use error::PatchGuestNetworkInterfaceByIdError;
-pub use error::PatchMachineConfigurationError;
-pub use error::PatchMmdsError;
-pub use error::PatchVmError;
-pub use error::PutBalloonError;
-pub use error::PutGuestBootSourceError;
-pub use error::PutGuestDriveByIdError;
-pub use error::PutGuestNetworkInterfaceByIdError;
-pub use error::PutGuestVsockError;
-pub use error::PutLoggerError;
-pub use error::PutMachineConfigurationError;
-pub use error::PutMetricsError;
-pub use error::PutMmdsConfigError;
-pub use error::PutMmdsError;
+use std::future::Future;
 
-use std::borrow::Cow;
+use crate::{api::error::Error, models};
 
-use hyper::StatusCode;
+pub trait Api: Send + Sync {
+    fn create_snapshot(
+        &self,
+        body: models::SnapshotCreateParams,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
-/// Information about the received HTTP response.
-#[derive(Debug, Clone)]
-pub struct ResponseContent<T> {
-    status: StatusCode,
-    content: String,
-    entity: Option<T>,
-}
+    fn create_sync_action(
+        &self,
+        info: models::InstanceActionInfo,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
-impl<T> ResponseContent<T> {
-    /// Returns the HTTP status code of the received response.
-    pub fn status(&self) -> StatusCode {
-        self.status
-    }
+    fn describe_balloon_config(
+        &self,
+    ) -> impl Future<Output = Result<models::Balloon, Error>> + Send;
 
-    /// Returns the content of the received response as a string.
-    pub fn content(&self) -> Cow<'_, str> {
-        Cow::Borrowed(&self.content)
-    }
+    fn describe_balloon_stats(
+        &self,
+    ) -> impl Future<Output = Result<models::BalloonStats, Error>> + Send;
 
-    /// Returns the actual [(typed) kind of failure](crate::api#enums) parsed from the body of the
-    /// received HTTP response.
-    pub fn entity(&self) -> Option<&T> {
-        self.entity.as_ref()
-    }
-}
+    fn describe_instance(&self)
+        -> impl Future<Output = Result<models::InstanceInfo, Error>> + Send;
 
-fn urlencode(s: impl AsRef<str>) -> String {
-    url::form_urlencoded::byte_serialize(s.as_ref().as_bytes()).collect()
+    fn get_export_vm_config(
+        &self,
+    ) -> impl Future<Output = Result<models::FullVmConfiguration, Error>> + Send;
+
+    fn get_firecracker_version(
+        &self,
+    ) -> impl Future<Output = Result<models::FirecrackerVersion, Error>> + Send;
+
+    fn get_machine_configuration(
+        &self,
+    ) -> impl Future<Output = Result<models::MachineConfiguration, Error>> + Send;
+
+    fn get_mmds(&self) -> impl Future<Output = Result<serde_json::Value, Error>> + Send;
+
+    fn load_snapshot(
+        &self,
+        body: models::SnapshotLoadParams,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn patch_balloon(
+        &self,
+        body: models::BalloonUpdate,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn patch_balloon_stats_interval(
+        &self,
+        body: models::BalloonStatsUpdate,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn patch_guest_drive_by_id(
+        &self,
+        drive_id: &str,
+        body: models::PartialDrive,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn patch_guest_network_interface_by_id(
+        &self,
+        iface_id: &str,
+        body: models::PartialNetworkInterface,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn patch_machine_configuration(
+        &self,
+        body: Option<models::MachineConfiguration>,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn patch_mmds(
+        &self,
+        body: Option<serde_json::Value>,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn patch_vm(&self, body: models::Vm) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_balloon(&self, body: models::Balloon) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_cpu_configuration(
+        &self,
+        body: Option<models::CpuConfig>,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_entropy_device(
+        &self,
+        body: models::EntropyDevice,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_guest_boot_source(
+        &self,
+        body: models::BootSource,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_guest_drive_by_id(
+        &self,
+        drive_id: &str,
+        body: models::Drive,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_guest_network_interface_by_id(
+        &self,
+        iface_id: &str,
+        body: models::NetworkInterface,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_guest_vsock(
+        &self,
+        body: models::Vsock,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_logger(&self, body: models::Logger) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_machine_configuration(
+        &self,
+        body: Option<models::MachineConfiguration>,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_metrics(&self, body: models::Metrics) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_mmds(
+        &self,
+        body: Option<serde_json::Value>,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn put_mmds_config(
+        &self,
+        body: models::MmdsConfig,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 }
