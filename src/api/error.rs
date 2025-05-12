@@ -18,9 +18,6 @@ pub enum Error {
 
     #[error("(de)serialization error")]
     Serde(#[source] ::serde_json::Error),
-
-    #[error("URI error")]
-    UriError(#[source] http::uri::InvalidUri),
 }
 
 #[derive(::thiserror::Error)]

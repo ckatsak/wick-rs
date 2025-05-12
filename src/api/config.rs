@@ -1,18 +1,15 @@
-use hyper_util::{
-    client::legacy::{connect::Connect, Client},
-    rt::TokioExecutor,
-};
+use std::path::{Path, PathBuf};
+
+use hyper_util::{client::legacy::Client, rt::TokioExecutor};
 use hyperlocal::UnixConnector;
 
-pub struct Config<C = UnixConnector>
-where
-    C: Connect + Clone + Send + Sync + 'static,
-{
-    pub base_path: &'static str,
-    pub client: Client<C, String>,
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub(crate) socket_path: PathBuf,
+    pub(crate) client: Client<UnixConnector, String>,
 }
 
-impl Config<UnixConnector> {
+impl Config {
     /// Construct a default `Config` with a default hyper [`Client`] using a
     /// [`UnixConnector`].
     ///
@@ -23,18 +20,16 @@ impl Config<UnixConnector> {
     ///
     /// ```
     /// # use crate::apis::config::Config;
-    /// let api_config = Config::new();
+    /// let api_config = Config::new("/tmp/fc.sock");
     /// ```
     #[inline]
-    pub fn new() -> Config<UnixConnector> {
-        Config::default()
+    pub fn new(socket_path: impl AsRef<Path>) -> Self {
+        let client = Client::builder(TokioExecutor::new()).build(UnixConnector);
+        Self::with_client(socket_path, client)
     }
 }
 
-impl<C> Config<C>
-where
-    C: Connect + Clone + Send + Sync,
-{
+impl Config {
     /// Construct a new `Config` with a custom hyper [`Client`].
     ///
     /// # Example
@@ -48,22 +43,18 @@ where
     ///
     /// let client = Client::builder(TokioExecutor::new())
     ///   .pool_idle_timeout(Duration::from_secs(30))
-    ///   .build(UnixConnector::default());
+    ///   .build(UnixConnector);
     ///
-    /// let api_config = Config::with_client(client);
+    /// let api_config = Config::with_client("/tmp/fc.sock", client);
     /// ```
     #[inline]
-    pub fn with_client(client: Client<C, String>) -> Config<C> {
-        Config {
-            base_path: "http://localhost",
+    pub fn with_client(
+        socket_path: impl AsRef<Path>,
+        client: Client<UnixConnector, String>,
+    ) -> Self {
+        Self {
+            socket_path: socket_path.as_ref().to_path_buf(),
             client,
         }
-    }
-}
-
-impl Default for Config<UnixConnector> {
-    fn default() -> Self {
-        let client = Client::builder(TokioExecutor::new()).build(Default::default());
-        Config::with_client(client)
     }
 }

@@ -1,10 +1,9 @@
-use compact_str::{format_compact, CompactString};
+use compact_str::CompactString;
 use http_body_util::BodyExt;
 use hyper::{
     header::{HeaderValue, CONTENT_LENGTH, CONTENT_TYPE},
     http,
 };
-use hyper_util::client::legacy::connect::Connect;
 
 use crate::api::{
     config::Config,
@@ -28,9 +27,9 @@ impl Request {
         }
     }
 
-    pub fn with_body<B: ::serde::Serialize>(mut self, body: B) -> Self {
-        self.serialized_body = Some(::serde_json::to_string(&body).unwrap());
-        self
+    pub fn with_body<B: ::serde::Serialize>(mut self, body: B) -> Result<Self, Error> {
+        self.serialized_body = Some(::serde_json::to_string(&body).map_err(Error::Serde)?);
+        Ok(self)
     }
 
     pub fn returns_nothing(mut self) -> Self {
@@ -38,18 +37,15 @@ impl Request {
         self
     }
 
-    pub async fn execute<'a, C, U>(self, conf: &Config<C>) -> Result<U, Error>
+    pub async fn execute<U>(self, config: &Config) -> Result<U, Error>
     where
-        C: Connect + Clone + Send + Sync,
-        U: Sized + Send + 'a,
+        U: Sized + Send,
         for<'de> U: ::serde::Deserialize<'de>,
     {
-        let uri = format_compact!("{}{}", conf.base_path, self.path)
-            .parse::<::hyper::Uri>()
-            .map_err(Error::UriError)?;
+        let uri = ::hyperlocal::Uri::new(&config.socket_path, &self.path);
         let mut req_builder = ::hyper::Request::builder().uri(uri).method(self.method);
 
-        let req_headers = req_builder.headers_mut().unwrap();
+        let req_headers = req_builder.headers_mut().expect("Request Builder is ok");
         let request = if let Some(body) = self.serialized_body {
             req_headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
             req_headers.insert(CONTENT_LENGTH, body.len().into());
@@ -59,7 +55,7 @@ impl Request {
         }
         .map_err(Error::Http)?;
 
-        let response = conf
+        let response = config
             .client
             .request(request)
             .await
