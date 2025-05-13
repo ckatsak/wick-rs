@@ -19,7 +19,7 @@ impl Config {
     /// # Example
     ///
     /// ```
-    /// # use crate::apis::config::Config;
+    /// # use wick::api::config::Config;
     /// let api_config = Config::new("/tmp/fc.sock");
     /// ```
     #[inline]
@@ -36,7 +36,7 @@ impl Config {
     ///
     /// ```
     /// # use core::time::Duration;
-    /// # use crate::apis::config::Config;
+    /// # use wick::api::config::Config;
     /// use hyper_util::client::legacy::Client;
     /// use hyper_util::rt::TokioExecutor;
     /// use hyperlocal::UnixConnector;
