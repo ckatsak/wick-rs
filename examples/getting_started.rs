@@ -2,7 +2,7 @@
 //!
 //! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.12.0/docs/getting-started.md
 
-use std::{path::Path, sync::Arc, time::Duration};
+use std::{path::Path, time::Duration};
 
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8PathBuf;
@@ -123,8 +123,7 @@ async fn setup_guest_vm(
 ) -> Result<()> {
     // Create Firecracker client
     let api_socket_path = format!("/tmp/fc_{id}.socket");
-    let config = ::wick::api::config::Config::new(api_socket_path);
-    let fcc = ::wick::Client::new(Arc::new(config));
+    let fcc = ::wick::Client::new(api_socket_path);
 
     // Create log file
     let log_file_path = format!("/tmp/fc_{id}.log");

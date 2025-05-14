@@ -1,14 +1,15 @@
+use std::path::Path;
+
 use compact_str::CompactString;
 use http_body_util::BodyExt;
 use hyper::{
     header::{HeaderValue, CONTENT_LENGTH, CONTENT_TYPE},
     http,
 };
+use hyper_util::client::legacy::Client;
+use hyperlocal::UnixConnector;
 
-use crate::api::{
-    config::Config,
-    error::{ApiError, Error},
-};
+use crate::api::error::{ApiError, Error};
 
 pub(crate) struct Request {
     method: http::Method,
@@ -37,12 +38,16 @@ impl Request {
         self
     }
 
-    pub async fn execute<U>(self, config: &Config) -> Result<U, Error>
+    pub async fn execute<U>(
+        self,
+        socket_path: &Path,
+        client: &Client<UnixConnector, String>,
+    ) -> Result<U, Error>
     where
         U: Sized + Send,
         for<'de> U: ::serde::Deserialize<'de>,
     {
-        let uri = ::hyperlocal::Uri::new(&config.socket_path, &self.path);
+        let uri = ::hyperlocal::Uri::new(socket_path, &self.path);
         let mut req_builder = ::hyper::Request::builder().uri(uri).method(self.method);
 
         let req_headers = req_builder.headers_mut().expect("Request Builder is ok");
@@ -55,11 +60,7 @@ impl Request {
         }
         .map_err(Error::Http)?;
 
-        let response = config
-            .client
-            .request(request)
-            .await
-            .map_err(Error::HyperClient)?;
+        let response = client.request(request).await.map_err(Error::HyperClient)?;
 
         if !response.status().is_success() {
             Err(Error::Api(ApiError {
