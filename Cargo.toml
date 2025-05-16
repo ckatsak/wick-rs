@@ -28,3 +28,6 @@ tokio = { version = "1.45", features = ["fs", "macros", "process", "rt-multi-thr
 
 [[example]]
 name = "getting_started"
+
+[[example]]
+name = "snapshot_support"
