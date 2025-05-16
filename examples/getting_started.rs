@@ -1,23 +1,34 @@
 //! The example of the ["Getting Started with Firecracker"][1] guide, using [`wick`].
 //!
+//! ## Note
+//!
+//! This example does not create and/or configure the required TAP interface.
+//!
+//! ## Example
+//!
+//! ```console
+//! $ ./getting_started --id <VM_ID> \
+//!     --tap-name <TAP_IFACE_NAME> \
+//!     --kernel-path <PATH_TO_VMLINUX> \
+//!     --rootfs <PATH_TO_ROOTFS> \
+//!     --firecracker-bin <PATH_TO_FIRECRACKER_BIN>
+//! ```
+//!
 //! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.12.0/docs/getting-started.md
 
 use std::{path::Path, time::Duration};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use camino::Utf8PathBuf;
 use clap::Parser;
-use tokio::{
-    process::{Child, Command},
-    sync::oneshot,
-    time::sleep,
-};
+use tokio::{process::Command, time::sleep};
 use wick::Api;
 
 const KERNEL_BOOT_ARGS: &str = "console=ttyS0 reboot=k panic=1 pci=off";
 const FC_MAC_ADDRESS: &str = "06:00:AC:10:00:02";
 const FIRECRACKER_BIN: &str = "firecracker";
 
+/// The example of the "Getting Started with Firecracker" guide, using wick-rs.
 #[derive(::clap::Parser, Debug, Clone)]
 #[command(version, about, long_about)]
 struct Cli {
@@ -46,29 +57,23 @@ struct Cli {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
     eprintln!("{cli:?}");
-
-    let (tx, rx) = oneshot::channel();
-
-    let setup = ::tokio::task::spawn({
-        let cli = cli.clone();
-
-        async move {
-            rx.await.context("failed to recv from oneshot")?;
-            setup_guest_vm(cli)
-                .await
-                .context("failed to setup guest VM")
-        }
-    });
+    let api_socket_path = format!("/tmp/fc_{}.socket", cli.id);
 
     // fork/exec firecracker
-    let mut guest_vm_process = spawn_vmm(cli)
-        .await
-        .context("failed to spawn Firecracker")?;
+    let mut guest_vm_process = Command::new(&cli.firecracker_bin)
+        .arg("--api-sock")
+        .arg(&api_socket_path)
+        .kill_on_drop(true)
+        .spawn()
+        .with_context(|| format!("failed to fork/exec '{}'", cli.firecracker_bin))?;
+
+    // give the api server some time to initialize
+    sleep(Duration::from_millis(500)).await;
 
     // setup the guest vm
-    tx.send(())
-        .expect("no reason for oneshot::Receiver to have been dropped");
-    setup.await.context("failed to join tokio task")??;
+    setup_guest_vm(&api_socket_path, cli)
+        .await
+        .context("failed to setup guest VM")?;
 
     // wait for guest vm to exit
     let status = guest_vm_process
@@ -77,42 +82,20 @@ async fn main() -> Result<()> {
         .context("failed to wait child VMM process")?;
     if !status.success() {
         if let Some(code) = status.code() {
-            Err(anyhow!(
-                "Child firecracker process exited with code '{code}'"
-            ))
+            bail!("Child firecracker process exited with code '{code}'")
         } else {
-            Err(anyhow!(
-                "Child firecracker process was terminated by a signal"
-            ))
+            bail!("Child firecracker process was terminated by a signal")
         }
-    } else {
-        Ok(())
     }
-}
 
-async fn spawn_vmm(
-    Cli {
-        id,
-        firecracker_bin,
-        ..
-    }: Cli,
-) -> Result<Child> {
-    let api_socket_path = format!("/tmp/fc_{id}.socket");
-
-    // fork/exec firecracker
-    let child = Command::new(&firecracker_bin)
-        .arg("--api-sock")
-        .arg(&api_socket_path)
-        .spawn()
-        .with_context(|| format!("failed to fork/exec '{firecracker_bin}'"))?;
-
-    // give the api server some time to initialize
-    sleep(Duration::from_secs(1)).await;
-
-    Ok(child)
+    // unlink(2) API socket after successfully reaping firecracker
+    ::tokio::fs::remove_file(&api_socket_path)
+        .await
+        .with_context(|| format!("failed to remove API socket '{api_socket_path}'"))
 }
 
 async fn setup_guest_vm(
+    api_socket_path: impl AsRef<Path>,
     Cli {
         id,
         tap_name,
@@ -122,7 +105,6 @@ async fn setup_guest_vm(
     }: Cli,
 ) -> Result<()> {
     // Create Firecracker client
-    let api_socket_path = format!("/tmp/fc_{id}.socket");
     let fcc = ::wick::Client::new(api_socket_path);
 
     // Create log file
