@@ -1,16 +1,18 @@
+use camino::Utf8PathBuf;
 use serde::{Deserialize, Serialize};
 
 /// Describes the configuration option for the metrics capability.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Metrics {
     /// Path to the named pipe or file where the JSON-formatted metrics are flushed.
-    #[serde(rename = "metrics_path")]
-    pub metrics_path: String,
+    pub metrics_path: Utf8PathBuf,
 }
 
 impl Metrics {
-    /// Describes the configuration option for the metrics capability.
-    pub fn new(metrics_path: String) -> Self {
-        Self { metrics_path }
+    #[inline]
+    pub fn new(metrics_path: impl Into<Utf8PathBuf>) -> Self {
+        Self {
+            metrics_path: metrics_path.into(),
+        }
     }
 }

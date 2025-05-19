@@ -1,26 +1,27 @@
+use camino::Utf8PathBuf;
+use compact_str::CompactString;
 use serde::{Deserialize, Serialize};
 
 /// Boot source descriptor.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct BootSource {
     /// Kernel boot arguments
-    #[serde(rename = "boot_args", skip_serializing_if = "Option::is_none")]
-    pub boot_args: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub boot_args: Option<CompactString>,
     /// Host level path to the initrd image used to boot the guest
-    #[serde(rename = "initrd_path", skip_serializing_if = "Option::is_none")]
-    pub initrd_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub initrd_path: Option<Utf8PathBuf>,
     /// Host level path to the kernel image used to boot the guest
-    #[serde(rename = "kernel_image_path")]
-    pub kernel_image_path: String,
+    pub kernel_image_path: Utf8PathBuf,
 }
 
 impl BootSource {
-    /// Boot source descriptor.
-    pub fn new(kernel_image_path: String) -> Self {
+    #[inline]
+    pub fn new(kernel_image_path: impl Into<Utf8PathBuf>) -> Self {
         Self {
             boot_args: None,
             initrd_path: None,
-            kernel_image_path,
+            kernel_image_path: kernel_image_path.into(),
         }
     }
 }

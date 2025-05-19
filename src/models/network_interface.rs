@@ -1,29 +1,32 @@
-use crate::models;
+use compact_str::CompactString;
 use serde::{Deserialize, Serialize};
 
+use crate::models;
+
 /// Defines a network interface.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct NetworkInterface {
-    #[serde(rename = "guest_mac", skip_serializing_if = "Option::is_none")]
-    pub guest_mac: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub guest_mac: Option<CompactString>,
     /// Host level path for the guest network interface
-    #[serde(rename = "host_dev_name")]
-    pub host_dev_name: String,
-    #[serde(rename = "iface_id")]
-    pub iface_id: String,
-    #[serde(rename = "rx_rate_limiter", skip_serializing_if = "Option::is_none")]
+    pub host_dev_name: CompactString,
+    pub iface_id: CompactString,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rx_rate_limiter: Option<Box<models::RateLimiter>>,
-    #[serde(rename = "tx_rate_limiter", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tx_rate_limiter: Option<Box<models::RateLimiter>>,
 }
 
 impl NetworkInterface {
-    /// Defines a network interface.
-    pub fn new(host_dev_name: String, iface_id: String) -> Self {
+    #[inline]
+    pub fn new(
+        host_dev_name: impl Into<CompactString>,
+        iface_id: impl Into<CompactString>,
+    ) -> Self {
         Self {
             guest_mac: None,
-            host_dev_name,
-            iface_id,
+            host_dev_name: host_dev_name.into(),
+            iface_id: iface_id.into(),
             rx_rate_limiter: None,
             tx_rate_limiter: None,
         }

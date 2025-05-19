@@ -1,18 +1,18 @@
+use compact_str::CompactString;
 use serde::{Deserialize, Serialize};
 
 /// Describes the Firecracker version.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct FirecrackerVersion {
     /// Firecracker build version.
-    #[serde(rename = "firecracker_version")]
-    pub firecracker_version: String,
+    pub firecracker_version: CompactString,
 }
 
 impl FirecrackerVersion {
-    /// Describes the Firecracker version.
-    pub fn new(firecracker_version: String) -> Self {
+    #[inline]
+    pub fn new(firecracker_version: impl Into<CompactString>) -> Self {
         Self {
-            firecracker_version,
+            firecracker_version: firecracker_version.into(),
         }
     }
 }
