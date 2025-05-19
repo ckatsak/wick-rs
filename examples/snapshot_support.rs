@@ -29,11 +29,12 @@
 //!
 //! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.12.0/docs/snapshotting/snapshot-support.md
 
-use std::{path::Path, time::Duration};
+use std::time::Duration;
 
-use anyhow::{anyhow, bail, Context, Result};
-use camino::Utf8PathBuf;
+use anyhow::{bail, Context, Result};
+use camino::{Utf8Path, Utf8PathBuf};
 use clap::{Parser, Subcommand};
+use compact_str::{format_compact, CompactString, ToCompactString};
 use tokio::{process::Command, time::sleep};
 use wick::{models, Api};
 
@@ -47,7 +48,7 @@ const FIRECRACKER_BIN: &str = "firecracker";
 struct Cli {
     /// Unique microVM ID
     #[arg(long)]
-    id: String,
+    id: CompactString,
 
     /// Path to firecracker binary
     #[arg(short, long, default_value = FIRECRACKER_BIN)]
@@ -68,7 +69,7 @@ enum Subcmd {
     Snap {
         /// Name of the tap device to use
         #[arg(short, long)]
-        tap_name: String,
+        tap_name: CompactString,
 
         /// Path to microVM kernel image
         #[arg(short, long)]
@@ -99,10 +100,20 @@ async fn main() -> Result<()> {
     // give the api server some time to initialize
     sleep(Duration::from_millis(100)).await;
 
+    // create firecracker client
+    let fcc = ::wick::Client::new(&api_socket_path);
+
+    // print firecracker version
+    let fc_version = fcc
+        .get_firecracker_version()
+        .await
+        .context("failed querying Firecracker version")?;
+    eprintln!("{fc_version:?}");
+
     // create or load vm
     match cli.cmd {
-        Subcmd::Snap { .. } => cmd_snap(cli, &api_socket_path).await,
-        Subcmd::Load => cmd_load(cli, &api_socket_path).await,
+        Subcmd::Snap { .. } => cmd_snap(cli, fcc).await,
+        Subcmd::Load => cmd_load(cli, fcc).await,
     }?;
 
     // wait for guest vm to exit
@@ -128,11 +139,8 @@ async fn cmd_load(
     Cli {
         id, snapshot_path, ..
     }: Cli,
-    api_socket_path: impl AsRef<Path>,
+    fcc: ::wick::Client,
 ) -> Result<()> {
-    // Create Firecracker client
-    let fcc = ::wick::Client::new(api_socket_path);
-
     // Set log file
     set_log_file(&fcc, &id).await.context("")?;
 
@@ -140,19 +148,11 @@ async fn cmd_load(
     fcc.load_snapshot(models::SnapshotLoadParams {
         enable_diff_snapshots: Some(false),
         mem_file_path: None,
-        mem_backend: Some(Box::new(models::MemoryBackend {
+        mem_backend: Some(models::MemoryBackend {
             backend_type: models::memory_backend::BackendType::File,
-            backend_path: String::from_iter([
-                snapshot_path.as_str(),
-                "/",
-                &format!("snap_vm{id}.mem"),
-            ]),
-        })),
-        snapshot_path: String::from_iter([
-            snapshot_path.as_str(),
-            "/",
-            &format!("snap_vm{id}.state"),
-        ]),
+            backend_path: snapshot_path.join(format_compact!("snap_vm{id}.mem").as_str()),
+        }),
+        snapshot_path: snapshot_path.join(format_compact!("snap_vm{id}.state").as_str()),
         resume_vm: Some(true),
         network_overrides: None,
     })
@@ -160,10 +160,7 @@ async fn cmd_load(
     .context("failed to load VM from snapshot")
 }
 
-async fn cmd_snap(cli: Cli, api_socket_path: impl AsRef<Path>) -> Result<()> {
-    // Create Firecracker client
-    let fcc = ::wick::Client::new(api_socket_path);
-
+async fn cmd_snap(cli: Cli, fcc: ::wick::Client) -> Result<()> {
     // setup the guest vm
     setup_guest_vm(&fcc, &cli)
         .await
@@ -193,16 +190,8 @@ async fn create_snapshot(
 
     // Create snapshot
     fcc.create_snapshot(models::SnapshotCreateParams {
-        mem_file_path: String::from_iter([
-            snapshot_path.as_str(),
-            "/",
-            &format!("snap_vm{id}.mem"),
-        ]),
-        snapshot_path: String::from_iter([
-            snapshot_path.as_str(),
-            "/",
-            &format!("snap_vm{id}.state"),
-        ]),
+        mem_file_path: snapshot_path.join(format_compact!("snap_vm{id}.mem").as_str()),
+        snapshot_path: snapshot_path.join(format_compact!("snap_vm{id}.state").as_str()),
         snapshot_type: Some(models::snapshot_create_params::SnapshotType::Full),
     })
     .await
@@ -232,12 +221,12 @@ async fn setup_guest_vm(fcc: &::wick::Client, Cli { id, cmd, .. }: &Cli) -> Resu
         .context("failed to set log file")?;
 
     // Set boot source
-    set_boot_source(fcc, &kernel_path)
+    set_boot_source(fcc, kernel_path)
         .await
         .context("failed to set boot source")?;
 
     // Set rootfs
-    set_rootfs(fcc, &rootfs)
+    set_rootfs(fcc, rootfs)
         .await
         .context("failed to set rootfs drive")?;
 
@@ -268,14 +257,14 @@ async fn start_microvm(fcc: &::wick::Client) -> Result<()> {
     .context("failed to put ActionType::InstanceStart")
 }
 
-async fn set_network_interface(fcc: &::wick::Client, tap_name: String) -> Result<()> {
+async fn set_network_interface(fcc: &::wick::Client, tap_name: CompactString) -> Result<()> {
     const NET1_IFACE_ID: &str = "net1";
 
     fcc.put_guest_network_interface_by_id(
         NET1_IFACE_ID,
         models::NetworkInterface {
-            iface_id: NET1_IFACE_ID.to_owned(),
-            guest_mac: Some(FC_MAC_ADDRESS.to_owned()),
+            iface_id: NET1_IFACE_ID.to_compact_string(),
+            guest_mac: Some(FC_MAC_ADDRESS.to_compact_string()),
             host_dev_name: tap_name,
             rx_rate_limiter: None,
             tx_rate_limiter: None,
@@ -285,25 +274,14 @@ async fn set_network_interface(fcc: &::wick::Client, tap_name: String) -> Result
     .context("failed to put network network interface")
 }
 
-async fn set_rootfs(fcc: &::wick::Client, rootfs_path: impl AsRef<Path>) -> Result<()> {
+async fn set_rootfs(fcc: &::wick::Client, rootfs_path: impl AsRef<Utf8Path>) -> Result<()> {
     const ROOTFS_DRIVE_ID: &str = "rootfs";
 
     fcc.put_guest_drive_by_id(
         ROOTFS_DRIVE_ID,
         models::Drive {
-            drive_id: ROOTFS_DRIVE_ID.to_owned(),
-            path_on_host: Some(
-                rootfs_path
-                    .as_ref()
-                    .to_str()
-                    .ok_or_else(|| {
-                        anyhow!(
-                            "invalid rootfs image path '{}'",
-                            rootfs_path.as_ref().display()
-                        )
-                    })?
-                    .to_owned(),
-            ),
+            drive_id: ROOTFS_DRIVE_ID.to_compact_string(),
+            path_on_host: Some(rootfs_path.as_ref().to_owned()),
             is_root_device: true,
             is_read_only: Some(false),
             partuuid: None,
@@ -317,18 +295,9 @@ async fn set_rootfs(fcc: &::wick::Client, rootfs_path: impl AsRef<Path>) -> Resu
     .context("failed to put guest drive")
 }
 
-async fn set_boot_source(fcc: &::wick::Client, kernel_path: impl AsRef<Path>) -> Result<()> {
+async fn set_boot_source(fcc: &::wick::Client, kernel_path: impl AsRef<Utf8Path>) -> Result<()> {
     fcc.put_guest_boot_source(models::BootSource {
-        kernel_image_path: kernel_path
-            .as_ref()
-            .to_str()
-            .ok_or_else(|| {
-                anyhow!(
-                    "invalid kernel image path '{}'",
-                    kernel_path.as_ref().display()
-                )
-            })?
-            .to_owned(),
+        kernel_image_path: kernel_path.as_ref().to_owned(),
         boot_args: Some(KERNEL_BOOT_ARGS.into()),
         initrd_path: None,
     })
@@ -338,7 +307,7 @@ async fn set_boot_source(fcc: &::wick::Client, kernel_path: impl AsRef<Path>) ->
 
 async fn set_log_file(fcc: &::wick::Client, id: &str) -> Result<()> {
     // Create log file
-    let log_file_path = format!("/tmp/fc_{id}.log");
+    let log_file_path = Utf8PathBuf::from(format_compact!("/tmp/fc_{id}.log").as_str());
     touch_file(&log_file_path)
         .await
         .context("failed to touch log file")?;
@@ -354,19 +323,14 @@ async fn set_log_file(fcc: &::wick::Client, id: &str) -> Result<()> {
     fcc.put_logger(logger).await.context("failed to PUT logger")
 }
 
-async fn touch_file(path: impl AsRef<Path>) -> Result<()> {
+async fn touch_file(path: impl AsRef<Utf8Path>) -> Result<()> {
     let _file = ::tokio::fs::File::options()
         .create(true)
         .truncate(false)
         .write(true)
         .append(true)
-        .open(&path)
+        .open(path.as_ref())
         .await
-        .with_context(|| {
-            format!(
-                "failed to open({}, O_CREAT|O_WRONLY)",
-                path.as_ref().display()
-            )
-        })?;
+        .with_context(|| format!("failed to open({}, O_CREAT|O_WRONLY)", path.as_ref()))?;
     Ok(())
 }

@@ -16,11 +16,12 @@
 //!
 //! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.12.0/docs/getting-started.md
 
-use std::{path::Path, time::Duration};
+use std::time::Duration;
 
-use anyhow::{anyhow, bail, Context, Result};
-use camino::Utf8PathBuf;
+use anyhow::{bail, Context, Result};
+use camino::{Utf8Path, Utf8PathBuf};
 use clap::Parser;
+use compact_str::{format_compact, CompactString, ToCompactString};
 use tokio::{process::Command, time::sleep};
 use wick::Api;
 
@@ -29,16 +30,16 @@ const FC_MAC_ADDRESS: &str = "06:00:AC:10:00:02";
 const FIRECRACKER_BIN: &str = "firecracker";
 
 /// The example of the "Getting Started with Firecracker" guide, using wick-rs.
-#[derive(::clap::Parser, Debug, Clone)]
+#[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about)]
 struct Cli {
     /// Unique microVM ID
     #[arg(long)]
-    id: String,
+    id: CompactString,
 
     /// Name of the tap device to use
     #[arg(short, long)]
-    tap_name: String,
+    tap_name: CompactString,
 
     /// Path to microVM kernel image
     #[arg(short, long)]
@@ -49,7 +50,7 @@ struct Cli {
     rootfs: Utf8PathBuf,
 
     /// Path to firecracker binary
-    #[arg(short, long, default_value_t = FIRECRACKER_BIN.into())]
+    #[arg(short, long, default_value = FIRECRACKER_BIN)]
     firecracker_bin: Utf8PathBuf,
 }
 
@@ -95,7 +96,7 @@ async fn main() -> Result<()> {
 }
 
 async fn setup_guest_vm(
-    api_socket_path: impl AsRef<Path>,
+    api_socket_path: impl AsRef<Utf8Path>,
     Cli {
         id,
         tap_name,
@@ -105,10 +106,17 @@ async fn setup_guest_vm(
     }: Cli,
 ) -> Result<()> {
     // Create Firecracker client
-    let fcc = ::wick::Client::new(api_socket_path);
+    let fcc = ::wick::Client::new(api_socket_path.as_ref());
+
+    // print firecracker version
+    let fc_version = fcc
+        .get_firecracker_version()
+        .await
+        .context("failed querying Firecracker version")?;
+    eprintln!("{fc_version:?}");
 
     // Create log file
-    let log_file_path = format!("/tmp/fc_{id}.log");
+    let log_file_path = Utf8PathBuf::from(format_compact!("/tmp/fc_{id}.log").as_str());
     touch_file(&log_file_path)
         .await
         .context("failed to touch log file")?;
@@ -145,24 +153,24 @@ async fn setup_guest_vm(
     Ok(())
 }
 
-async fn start_microvm(c: &::wick::Client) -> Result<()> {
+async fn start_microvm(fcc: &::wick::Client) -> Result<()> {
     use wick::models::instance_action_info::ActionType;
 
-    c.create_sync_action(::wick::models::InstanceActionInfo {
+    fcc.create_sync_action(::wick::models::InstanceActionInfo {
         action_type: ActionType::InstanceStart,
     })
     .await
     .context("failed to put ActionType::InstanceStart")
 }
 
-async fn set_network_interface(c: &::wick::Client, tap_name: String) -> Result<()> {
+async fn set_network_interface(fcc: &::wick::Client, tap_name: CompactString) -> Result<()> {
     const NET1_IFACE_ID: &str = "net1";
 
-    c.put_guest_network_interface_by_id(
+    fcc.put_guest_network_interface_by_id(
         NET1_IFACE_ID,
         ::wick::models::NetworkInterface {
-            iface_id: NET1_IFACE_ID.to_owned(),
-            guest_mac: Some(FC_MAC_ADDRESS.to_owned()),
+            iface_id: NET1_IFACE_ID.to_compact_string(),
+            guest_mac: Some(FC_MAC_ADDRESS.to_compact_string()),
             host_dev_name: tap_name,
             rx_rate_limiter: None,
             tx_rate_limiter: None,
@@ -172,25 +180,14 @@ async fn set_network_interface(c: &::wick::Client, tap_name: String) -> Result<(
     .context("failed to put network network interface")
 }
 
-async fn set_rootfs(c: &::wick::Client, rootfs_path: impl AsRef<Path>) -> Result<()> {
+async fn set_rootfs(fcc: &::wick::Client, rootfs_path: impl AsRef<Utf8Path>) -> Result<()> {
     const ROOTFS_DRIVE_ID: &str = "rootfs";
 
-    c.put_guest_drive_by_id(
+    fcc.put_guest_drive_by_id(
         ROOTFS_DRIVE_ID,
         ::wick::models::Drive {
-            drive_id: ROOTFS_DRIVE_ID.to_owned(),
-            path_on_host: Some(
-                rootfs_path
-                    .as_ref()
-                    .to_str()
-                    .ok_or_else(|| {
-                        anyhow!(
-                            "invalid rootfs image path '{}'",
-                            rootfs_path.as_ref().display()
-                        )
-                    })?
-                    .to_owned(),
-            ),
+            drive_id: ROOTFS_DRIVE_ID.to_compact_string(),
+            path_on_host: Some(rootfs_path.as_ref().to_owned()),
             is_root_device: true,
             is_read_only: Some(false),
             partuuid: None,
@@ -204,18 +201,9 @@ async fn set_rootfs(c: &::wick::Client, rootfs_path: impl AsRef<Path>) -> Result
     .context("failed to put guest drive")
 }
 
-async fn set_boot_source(c: &::wick::Client, kernel_path: impl AsRef<Path>) -> Result<()> {
-    c.put_guest_boot_source(::wick::models::BootSource {
-        kernel_image_path: kernel_path
-            .as_ref()
-            .to_str()
-            .ok_or_else(|| {
-                anyhow!(
-                    "invalid kernel image path '{}'",
-                    kernel_path.as_ref().display()
-                )
-            })?
-            .to_owned(),
+async fn set_boot_source(fcc: &::wick::Client, kernel_path: impl AsRef<Utf8Path>) -> Result<()> {
+    fcc.put_guest_boot_source(::wick::models::BootSource {
+        kernel_image_path: kernel_path.as_ref().to_owned(),
         boot_args: Some(KERNEL_BOOT_ARGS.into()),
         initrd_path: None,
     })
@@ -223,7 +211,7 @@ async fn set_boot_source(c: &::wick::Client, kernel_path: impl AsRef<Path>) -> R
     .context("failed to PUT guest boot source")
 }
 
-async fn set_log_file(c: &::wick::Client, log_file_path: String) -> Result<()> {
+async fn set_log_file(fcc: &::wick::Client, log_file_path: Utf8PathBuf) -> Result<()> {
     let logger = ::wick::models::Logger {
         level: Some(::wick::models::logger::Level::Debug),
         log_path: Some(log_file_path),
@@ -231,22 +219,17 @@ async fn set_log_file(c: &::wick::Client, log_file_path: String) -> Result<()> {
         show_log_origin: Some(true),
         module: None,
     };
-    c.put_logger(logger).await.context("failed to PUT logger")
+    fcc.put_logger(logger).await.context("failed to PUT logger")
 }
 
-async fn touch_file(path: impl AsRef<Path>) -> Result<()> {
+async fn touch_file(path: impl AsRef<Utf8Path>) -> Result<()> {
     let _file = ::tokio::fs::File::options()
         .create(true)
         .truncate(false)
         .write(true)
         .append(true)
-        .open(&path)
+        .open(path.as_ref())
         .await
-        .with_context(|| {
-            format!(
-                "failed to open({}, O_CREAT|O_WRONLY)",
-                path.as_ref().display()
-            )
-        })?;
+        .with_context(|| format!("failed to open({}, O_CREAT|O_WRONLY)", path.as_ref()))?;
     Ok(())
 }
