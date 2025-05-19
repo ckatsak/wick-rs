@@ -1,36 +1,25 @@
+use camino::Utf8PathBuf;
+use compact_str::CompactString;
 use serde::{Deserialize, Serialize};
 
 /// Describes the configuration option for the logging capability.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Logger {
     /// Set the level. The possible values are case-insensitive.
-    #[serde(rename = "level", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub level: Option<Level>,
     /// Path to the named pipe or file for the human readable log output.
-    #[serde(rename = "log_path", skip_serializing_if = "Option::is_none")]
-    pub log_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub log_path: Option<Utf8PathBuf>,
     /// Whether or not to output the level in the logs.
-    #[serde(rename = "show_level", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub show_level: Option<bool>,
     /// Whether or not to include the file path and line number of the log's origin.
-    #[serde(rename = "show_log_origin", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub show_log_origin: Option<bool>,
     /// The module path to filter log messages by.
-    #[serde(rename = "module", skip_serializing_if = "Option::is_none")]
-    pub module: Option<String>,
-}
-
-impl Logger {
-    /// Describes the configuration option for the logging capability.
-    pub fn new() -> Self {
-        Self {
-            level: None,
-            log_path: None,
-            show_level: None,
-            show_log_origin: None,
-            module: None,
-        }
-    }
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub module: Option<CompactString>,
 }
 
 /// Set the level. The possible values are case-insensitive.
@@ -38,15 +27,10 @@ impl Logger {
     Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize,
 )]
 pub enum Level {
-    #[serde(rename = "Error")]
     #[default]
     Error,
-    #[serde(rename = "Warning")]
     Warning,
-    #[serde(rename = "Info")]
     Info,
-    #[serde(rename = "Debug")]
     Debug,
-    #[serde(rename = "Trace")]
     Trace,
 }

@@ -1,16 +1,10 @@
-use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// EntropyDevice : Defines an entropy device.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct EntropyDevice {
-    #[serde(rename = "rate_limiter", skip_serializing_if = "Option::is_none")]
-    pub rate_limiter: Option<Box<models::RateLimiter>>,
-}
+use crate::models;
 
-impl EntropyDevice {
-    /// Defines an entropy device.
-    pub fn new() -> Self {
-        Default::default()
-    }
+/// Defines an entropy device.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct EntropyDevice {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rate_limiter: Option<Box<models::RateLimiter>>,
 }

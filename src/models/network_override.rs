@@ -1,22 +1,24 @@
+use compact_str::CompactString;
 use serde::{Deserialize, Serialize};
 
 /// Allows for changing the backing TAP device of a network interface during snapshot restore.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct NetworkOverride {
     /// The name of the interface to modify
-    #[serde(rename = "iface_id")]
-    pub iface_id: String,
+    pub iface_id: CompactString,
     /// The new host device of the interface
-    #[serde(rename = "host_dev_name")]
-    pub host_dev_name: String,
+    pub host_dev_name: CompactString,
 }
 
 impl NetworkOverride {
-    /// Allows for changing the backing TAP device of a network interface during snapshot restore.
-    pub fn new(iface_id: String, host_dev_name: String) -> Self {
+    #[inline]
+    pub fn new(
+        iface_id: impl Into<CompactString>,
+        host_dev_name: impl Into<CompactString>,
+    ) -> Self {
         Self {
-            iface_id,
-            host_dev_name,
+            iface_id: iface_id.into(),
+            host_dev_name: host_dev_name.into(),
         }
     }
 }

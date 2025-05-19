@@ -1,24 +1,24 @@
-use crate::models;
+use compact_str::CompactString;
 use serde::{Deserialize, Serialize};
+
+use crate::models;
 
 /// Defines a partial network interface structure, used to update the rate limiters for that
 /// interface, after microvm start.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct PartialNetworkInterface {
-    #[serde(rename = "iface_id")]
-    pub iface_id: String,
-    #[serde(rename = "rx_rate_limiter", skip_serializing_if = "Option::is_none")]
+    pub iface_id: CompactString,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rx_rate_limiter: Option<Box<models::RateLimiter>>,
-    #[serde(rename = "tx_rate_limiter", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tx_rate_limiter: Option<Box<models::RateLimiter>>,
 }
 
 impl PartialNetworkInterface {
-    /// Defines a partial network interface structure, used to update the rate limiters for that
-    /// interface, after microvm start.
-    pub fn new(iface_id: String) -> Self {
+    #[inline]
+    pub fn new(iface_id: impl Into<CompactString>) -> Self {
         Self {
-            iface_id,
+            iface_id: iface_id.into(),
             rx_rate_limiter: None,
             tx_rate_limiter: None,
         }
