@@ -15,7 +15,8 @@
 //!     snap \
 //!         --tap-name <TAP_IFACE_NAME> \
 //!         --kernel-path <PATH_TO_VMLINUX> \
-//!         --rootfs <PATH_TO_ROOTFS>
+//!         --rootfs <PATH_TO_ROOTFS> \
+//!         --delay <SECONDS>
 //! ```
 //!
 //! ### Load Snapshot
@@ -41,6 +42,7 @@ use wick::{models, Api};
 const KERNEL_BOOT_ARGS: &str = "console=ttyS0 reboot=k panic=1 pci=off";
 const FC_MAC_ADDRESS: &str = "06:00:AC:10:00:02";
 const FIRECRACKER_BIN: &str = "firecracker";
+const DEFAULT_SNAPSHOT_DELAY_SEC: u64 = 3;
 
 /// An example based on the "Firecracker Snapshotting" document, using wick-rs.
 #[derive(Debug, Clone, Parser)]
@@ -78,6 +80,10 @@ enum Subcmd {
         /// Path to microVM rootfs (RW) image
         #[arg(short, long, value_name = "ROOTFS_PATH")]
         rootfs: Utf8PathBuf,
+
+        /// Delay before creating the snapshot, in seconds
+        #[arg(short, long, value_name = "SECONDS", default_value_t = DEFAULT_SNAPSHOT_DELAY_SEC)]
+        delay: u64,
     },
 
     /// Load VM from a snapshot
@@ -142,7 +148,9 @@ async fn cmd_load(
     fcc: ::wick::Client,
 ) -> Result<()> {
     // Set log file
-    set_log_file(&fcc, &id).await.context("")?;
+    set_log_file(&fcc, &id)
+        .await
+        .context("failed to set log file before VM snapshot loading")?;
 
     // Load snapshot
     fcc.load_snapshot(models::SnapshotLoadParams {
@@ -167,7 +175,10 @@ async fn cmd_snap(cli: Cli, fcc: ::wick::Client) -> Result<()> {
         .context("failed to setup guest VM")?;
 
     // wait for the VM to boot...
-    sleep(Duration::from_secs(3)).await;
+    let Subcmd::Snap { delay, .. } = cli.cmd else {
+        unreachable!("cannot reach `fn cmd_snap()` when `cli.cmd == Subcmd::Load{{..}}`");
+    };
+    sleep(Duration::from_secs(delay)).await;
 
     // ...and then create a snapshot
     create_snapshot(&fcc, &cli)
@@ -210,6 +221,7 @@ async fn setup_guest_vm(fcc: &::wick::Client, Cli { id, cmd, .. }: &Cli) -> Resu
         tap_name,
         kernel_path,
         rootfs,
+        ..
     } = cmd
     else {
         unreachable!()
@@ -218,7 +230,7 @@ async fn setup_guest_vm(fcc: &::wick::Client, Cli { id, cmd, .. }: &Cli) -> Resu
     // Set log file
     set_log_file(fcc, id)
         .await
-        .context("failed to set log file")?;
+        .context("failed to set log file during VM setup")?;
 
     // Set boot source
     set_boot_source(fcc, kernel_path)
