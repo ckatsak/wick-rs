@@ -16,6 +16,9 @@ pub struct MmdsConfig {
     /// A valid IPv4 link-local address.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ipv4_address: Option<CompactString>,
+    /// MMDS operates compatibly with EC2 IMDS (i.e. responds "text/plain" content regardless of
+    /// `Accept` header in requests).
+    pub imds_comat: bool,
 }
 
 impl MmdsConfig {
@@ -25,6 +28,7 @@ impl MmdsConfig {
             version: None,
             network_interfaces,
             ipv4_address: None,
+            imds_comat: false,
         }
     }
 }

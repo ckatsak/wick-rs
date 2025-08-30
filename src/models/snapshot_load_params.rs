@@ -7,9 +7,9 @@ use crate::models;
 /// fields must be present in the body of the request.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct SnapshotLoadParams {
-    /// Enable support for incremental (diff) snapshots by tracking dirty guest pages.
+    /// Enable dirty page tracking to improve space efficiency of diff snapshots.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub enable_diff_snapshots: Option<bool>,
+    pub track_dirty_pages: Option<bool>,
     /// Path to the file that contains the guest memory to be loaded. It is only allowed if
     /// `mem_backend` is not present. This parameter has been deprecated and it will be removed
     /// in future Firecracker release.
@@ -31,7 +31,7 @@ impl SnapshotLoadParams {
     #[inline]
     pub fn new(snapshot_path: impl Into<Utf8PathBuf>) -> Self {
         Self {
-            enable_diff_snapshots: None,
+            track_dirty_pages: None,
             mem_file_path: None,
             mem_backend: None,
             snapshot_path: snapshot_path.into(),

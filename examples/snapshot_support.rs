@@ -154,7 +154,7 @@ async fn cmd_load(
 
     // Load snapshot
     fcc.load_snapshot(models::SnapshotLoadParams {
-        enable_diff_snapshots: Some(false),
+        track_dirty_pages: Some(false),
         mem_file_path: None,
         mem_backend: Some(models::MemoryBackend {
             backend_type: models::memory_backend::BackendType::File,
