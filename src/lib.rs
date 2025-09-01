@@ -1,5 +1,5 @@
 //! An **unofficial** client crate for
-//! [Firecracker](https://github.com/firecracker-microvm/firecracker) v1.13.0.
+//! [Firecracker](https://github.com/firecracker-microvm/firecracker) v1.13.1.
 
 pub mod api;
 pub mod models;

@@ -18,7 +18,7 @@ pub struct MmdsConfig {
     pub ipv4_address: Option<CompactString>,
     /// MMDS operates compatibly with EC2 IMDS (i.e. responds "text/plain" content regardless of
     /// `Accept` header in requests).
-    pub imds_comat: bool,
+    pub imds_compat: bool,
 }
 
 impl MmdsConfig {
@@ -28,7 +28,7 @@ impl MmdsConfig {
             version: None,
             network_interfaces,
             ipv4_address: None,
-            imds_comat: false,
+            imds_compat: false,
         }
     }
 }

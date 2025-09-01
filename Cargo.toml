@@ -1,6 +1,6 @@
 [package]
 name = "wick"
-version = "0.0.6-1.13.0"
+version = "0.0.7-1.13.1"
 authors = ["Christos Katsakioris <ckatsak@gmail.com>"]
 edition = "2021"
 description = "An unofficial client crate for Firecracker."
