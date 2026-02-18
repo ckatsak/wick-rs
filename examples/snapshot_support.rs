@@ -28,7 +28,7 @@
 //!     load
 //! ```
 //!
-//! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.13.1/docs/snapshotting/snapshot-support.md
+//! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.14.1/docs/snapshotting/snapshot-support.md
 
 use std::time::Duration;
 
@@ -319,6 +319,7 @@ async fn set_boot_source(fcc: &::wick::Client, kernel_path: impl AsRef<Utf8Path>
 
 async fn set_log_file(fcc: &::wick::Client, id: &str) -> Result<()> {
     // Create log file
+    // NOTE: As of Firecracker v1.14.0, manually creating the log (and metrics) file(s) is optional.
     let log_file_path = Utf8PathBuf::from(format_compact!("/tmp/fc_{id}.log").as_str());
     touch_file(&log_file_path)
         .await

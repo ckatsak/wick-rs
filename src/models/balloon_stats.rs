@@ -43,6 +43,25 @@ pub struct BalloonStats {
     /// The number of failed hugetlb page allocations in the guest.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hugetlb_failures: Option<i64>,
+    /// OOM killer invocations, indicating critical memory pressure.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub oom_kill: Option<i64>,
+    /// Counter of Allocation enter a slow path to gain more memory page.
+    /// The reclaim/scan metrics can reveal what is actually happening.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alloc_stall: Option<i64>,
+    /// Amount of memory scanned asynchronously.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub async_scan: Option<i64>,
+    /// Amount of memory scanned directly.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub direct_scan: Option<i64>,
+    /// Amount of memory reclaimed asynchronously.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub async_reclaim: Option<i64>,
+    /// Amount of memory reclaimed directly.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub direct_reclaim: Option<i64>,
 }
 
 impl BalloonStats {
@@ -62,6 +81,12 @@ impl BalloonStats {
             disk_caches: None,
             hugetlb_allocations: None,
             hugetlb_failures: None,
+            oom_kill: None,
+            alloc_stall: None,
+            async_scan: None,
+            direct_scan: None,
+            async_reclaim: None,
+            direct_reclaim: None,
         }
     }
 }

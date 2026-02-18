@@ -18,6 +18,7 @@ pub struct Vsock {
     pub uds_path: Utf8PathBuf,
     /// This parameter has been deprecated and it will be removed in future Firecracker release.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[deprecated]
     pub vsock_id: Option<CompactString>,
 }
 
@@ -27,6 +28,7 @@ impl Vsock {
         Self {
             guest_cid,
             uds_path: uds_path.into(),
+            #[allow(deprecated)]
             vsock_id: None,
         }
     }

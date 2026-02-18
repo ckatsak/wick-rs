@@ -14,7 +14,7 @@
 //!     --firecracker-bin <PATH_TO_FIRECRACKER_BIN>
 //! ```
 //!
-//! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.13.1/docs/getting-started.md
+//! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.14.1/docs/getting-started.md
 
 use std::time::Duration;
 
@@ -116,6 +116,7 @@ async fn setup_guest_vm(
     eprintln!("{fc_version:?}");
 
     // Create log file
+    // NOTE: As of Firecracker v1.14.0, manually creating the log (and metrics) file(s) is optional.
     let log_file_path = Utf8PathBuf::from(format_compact!("/tmp/fc_{id}.log").as_str());
     touch_file(&log_file_path)
         .await

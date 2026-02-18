@@ -11,6 +11,12 @@ pub struct Balloon {
     /// statistics. Defaults to 0.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stats_polling_interval_s: Option<i32>,
+    /// Whether the free page hinting feature is enabled.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub free_page_hinting: Option<bool>,
+    /// Whether the free page reporting feature is enabled.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub free_page_reporting: Option<bool>,
 }
 
 impl Balloon {
@@ -20,6 +26,8 @@ impl Balloon {
             amount_mib,
             deflate_on_oom,
             stats_polling_interval_s: None,
+            free_page_hinting: None,
+            free_page_reporting: None,
         }
     }
 }

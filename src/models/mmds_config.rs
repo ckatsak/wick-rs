@@ -18,6 +18,7 @@ pub struct MmdsConfig {
     pub ipv4_address: Option<CompactString>,
     /// MMDS operates compatibly with EC2 IMDS (i.e. responds "text/plain" content regardless of
     /// `Accept` header in requests).
+    #[serde(default)]
     pub imds_compat: bool,
 }
 
