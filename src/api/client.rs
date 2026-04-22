@@ -63,6 +63,12 @@ impl Client {
             client,
         }
     }
+
+    /// Returns the socket path that this `Client` is configured with.
+    #[inline]
+    pub fn socket_path(&self) -> &Path {
+        &self.socket_path
+    }
 }
 
 impl Api for Client {
