@@ -25,6 +25,13 @@ pub struct SnapshotLoadParams {
     /// Network host device names to override
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_overrides: Option<Vec<models::NetworkOverride>>,
+    /// [x86_64 only] When set to `true`, passes `KVM_CLOCK_REALTIME` to
+    /// `KVM_SET_CLOCK` on restore, advancing `kvmclock` by the wall-clock time
+    /// elapsed since the snapshot was taken. When `false` (default), `kvmclock`
+    /// resumes from where it was at snapshot time. This option may be extended
+    /// to other clock sources and CPU architectures in the future.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub clock_realtime: Option<bool>,
 }
 
 impl SnapshotLoadParams {
@@ -37,6 +44,7 @@ impl SnapshotLoadParams {
             snapshot_path: snapshot_path.into(),
             resume_vm: None,
             network_overrides: None,
+            clock_realtime: None,
         }
     }
 }
