@@ -28,7 +28,7 @@
 //!     load
 //! ```
 //!
-//! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.14.1/docs/snapshotting/snapshot-support.md
+//! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.15.1/docs/snapshotting/snapshot-support.md
 
 use std::time::Duration;
 

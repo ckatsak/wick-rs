@@ -14,7 +14,7 @@
 //!     --firecracker-bin <PATH_TO_FIRECRACKER_BIN>
 //! ```
 //!
-//! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.14.1/docs/getting-started.md
+//! [1]: https://github.com/firecracker-microvm/firecracker/blob/v1.15.1/docs/getting-started.md
 
 use std::time::Duration;
 
