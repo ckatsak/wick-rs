@@ -163,6 +163,7 @@ async fn cmd_load(
         snapshot_path: snapshot_path.join(format_compact!("snap_vm{id}.state").as_str()),
         resume_vm: Some(true),
         network_overrides: None,
+        clock_realtime: None,
     })
     .await
     .context("failed to load VM from snapshot")
